@@ -3,91 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Agro na Palma da Mão</title>
+    <title>Agro na Palma da Mão - Pro</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
-        :root {
-            --bg: #061106;
-            --card: #112111;
-            --primary: #388e3c;
-            --accent: #81c784;
-            --text: #e0e0e0;
-        }
-
-        body {
-            background-color: var(--bg);
-            color: var(--text);
-            font-family: sans-serif;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 15px;
-        }
-
+        :root { --bg: #061106; --card: #112111; --primary: #388e3c; --accent: #81c784; --text: #e0e0e0; }
+        body { background-color: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 100%; max-width: 450px; }
-
-        .header {
-            text-align: center;
-            border-bottom: 2px solid var(--primary);
-            margin-bottom: 15px;
-            padding-bottom: 5px;
-        }
-
-        .btn-main {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 18px;
-            border-radius: 12px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            width: 100%;
-            cursor: pointer;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-        }
-
-        #weather-card {
-            background-color: var(--card);
-            padding: 20px;
-            border-radius: 15px;
-            display: none;
-            margin-bottom: 15px;
-            border: 1px solid #1a331a;
-        }
-
-        .temp-grande { font-size: 4rem; font-weight: bold; color: var(--accent); margin: 5px 0; }
+        .header { text-align: center; border-bottom: 2px solid var(--primary); margin-bottom: 15px; padding-bottom: 5px; }
+        .btn-main { background-color: var(--primary); color: white; border: none; padding: 18px; border-radius: 12px; font-size: 1.1rem; font-weight: bold; width: 100%; cursor: pointer; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
         
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .item {
-            background: rgba(0,0,0,0.3);
-            padding: 12px;
-            border-radius: 8px;
-            text-align: left;
-        }
-
-        .label { font-size: 0.7rem; opacity: 0.7; display: block; }
+        /* Cards */
+        .card { background-color: var(--card); padding: 20px; border-radius: 15px; margin-bottom: 15px; border: 1px solid #1a331a; display: none; }
+        .temp-grande { font-size: 4rem; font-weight: bold; color: var(--accent); margin: 5px 0; text-align: center; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .item { background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; }
+        .label { font-size: 0.7rem; opacity: 0.7; display: block; text-transform: uppercase; }
         .valor { font-weight: bold; font-size: 1.1rem; }
 
-        #map-container {
-            width: 100%;
-            height: 250px;
-            border-radius: 15px;
-            overflow: hidden;
-            display: none;
-            border: 2px solid var(--primary);
-        }
+        /* Mapas e Satélite */
+        .titulo-sessao { color: var(--accent); font-size: 0.9rem; margin-bottom: 10px; font-weight: bold; text-transform: uppercase; }
+        #map-container { width: 100%; height: 250px; border-radius: 15px; overflow: hidden; border: 2px solid var(--primary); margin-bottom: 15px; }
         #map { width: 100%; height: 100%; }
+        
+        .satelite-img { width: 100%; border-radius: 15px; border: 2px solid #1a331a; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
@@ -95,26 +36,35 @@
 <div class="container">
     <div class="header">
         <h2 style="margin:0;">Agro na Palma da Mão</h2>
-        <small style="color:var(--accent)">Monitoramento em Tempo Real</small>
+        <small style="color:var(--accent)">Monitoramento por Satélite</small>
     </div>
 
-    <button class="btn-main" onclick="executar()">📍 BUSCAR LOCALIZAÇÃO E CLIMA</button>
+    <button class="btn-main" onclick="executar()">📍 SINCRONIZAR LOCALIZAÇÃO</button>
 
-    <div id="weather-card">
+    <div id="weather-card" class="card">
         <h3 id="cidade" style="margin:0;">--</h3>
         <div id="hora" style="font-size:0.8rem; opacity:0.6;"></div>
         <div class="temp-grande" id="temp">--°C</div>
-        <div id="desc" style="text-transform: capitalize;">--</div>
+        <div id="desc" style="text-transform: capitalize; text-align: center;">--</div>
 
         <div class="grid">
-            <div class="item"><span class="label">UMIDADE</span><span class="valor" id="umi">--</span>%</div>
-            <div class="item"><span class="label">VENTO</span><span class="valor" id="ven">--</span> km/h</div>
-            <div class="item"><span class="label">DELTA T</span><span class="valor" id="dt">--</span></div>
-            <div class="item"><span class="label">ORVALHO</span><span class="valor" id="orv">--</span>°C</div>
+            <div class="item"><span class="label">💧 Umidade</span><span class="valor" id="umi">--%</span></div>
+            <div class="item"><span class="label">💨 Vento</span><span class="valor" id="ven">-- km/h</span></div>
+            <div class="item"><span class="label">🌡️ Delta T</span><span class="valor" id="dt">--</span></div>
+            <div class="item"><span class="label">📍 Orvalho</span><span class="valor" id="orv">--°C</span></div>
         </div>
     </div>
 
-    <div id="map-container"><div id="map"></div></div>
+    <div id="map-area" style="display:none; width: 100%;">
+        <div class="titulo-sessao">📍 Sua Localização Atual</div>
+        <div id="map-container"><div id="map"></div></div>
+    </div>
+
+    <div id="satelite-area" style="display:none; width: 100%;">
+        <div class="titulo-sessao">🛰️ Satélite em Tempo Real (Nuvens)</div>
+        <img id="img-satelite" class="satelite-img" src="" alt="Satélite Meteorológico">
+        <p style="font-size: 0.7rem; opacity: 0.6; text-align: center; margin-top: 5px;">Fonte: CPTEC / INPE - Atualizado a cada 15 min</p>
+    </div>
 </div>
 
 <script>
@@ -123,20 +73,29 @@
 
     function executar() {
         if (navigator.geolocation) {
-            document.querySelector('.btn-main').innerText = "Sincronizando...";
+            document.querySelector('.btn-main').innerText = "Acessando Satélite...";
             navigator.geolocation.getCurrentPosition(pos => {
                 const { latitude, longitude } = pos.coords;
                 
-                // Buscar Clima
+                // 1. Clima
                 fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&units=metric&lang=pt_br&appid=${KEY}`)
                     .then(r => r.json())
                     .then(data => {
                         exibirDados(data);
                         mostrarMapa(latitude, longitude);
+                        carregarSatelite();
                         document.querySelector('.btn-main').innerText = "📍 ATUALIZAR AGORA";
                     });
             });
         }
+    }
+
+    function carregarSatelite() {
+        // Puxa a imagem do satélite GOES-16 (Brasil) em tempo real
+        const timestamp = new Date().getTime();
+        const urlSatelite = `https://servicos.cptec.inpe.br/goes16/goes16/web/animacao/anim_vapor_sul_600.gif?t=${timestamp}`;
+        document.getElementById('img-satelite').src = urlSatelite;
+        document.getElementById('satelite-area').style.display = 'block';
     }
 
     function exibirDados(d) {
@@ -147,7 +106,6 @@
         document.getElementById('umi').innerText = d.main.humidity;
         document.getElementById('ven').innerText = Math.round(d.wind.speed * 3.6);
 
-        // Cálculos Agronômicos
         const t = d.main.temp;
         const ur = d.main.humidity;
         const orv = (t - (100 - ur) / 5).toFixed(1);
@@ -157,19 +115,16 @@
         const dtEl = document.getElementById('dt');
         dtEl.innerText = dt;
         dtEl.style.color = (dt >= 2 && dt <= 8) ? "#81c784" : "#ff5252";
-
-        document.getElementById('hora').innerText = new Date().toLocaleTimeString();
+        document.getElementById('hora').innerText = "Medição: " + new Date().toLocaleTimeString();
     }
 
     function mostrarMapa(lat, lon) {
-        document.getElementById('map-container').style.display = 'block';
+        document.getElementById('map-area').style.display = 'block';
         if (!map) {
             map = L.map('map', {zoomControl: false}).setView([lat, lon], 15);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
-        } else {
-            map.setView([lat, lon], 15);
-        }
-        L.circle([lat, lon], {color: '#388e3c', radius: 50}).addTo(map);
+        } else { map.setView([lat, lon], 15); }
+        L.circle([lat, lon], {color: '#388e3c', radius: 50, fillOpacity: 0.5}).addTo(map);
         setTimeout(() => map.invalidateSize(), 200);
     }
 </script>
