@@ -2,47 +2,59 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clima - Agro na Palma da Mão</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Agro na Palma da Mão - Pro</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
     <style>
         :root {
-            --bg-color: #0a1a0a;
-            --card-bg: #1a2e1a;
-            --primary: #2e7d32;
-            --accent: #81c784;
+            --bg-color: #061106; /* Mais escuro */
+            --card-bg: #112111;
+            --primary: #388e3c;
+            --accent: #a5d6a7;
             --text: #e0e0e0;
         }
 
         body {
             background-color: var(--bg-color);
             color: var(--text);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 20px;
-            margin: 0;
         }
 
-        .container {
+        /* Container Principal com Padding do Android */
+        .app-container {
             width: 100%;
-            max-width: 450px;
-            text-align: center;
+            max-width: 480px; /* Largura mobile padrão */
+            padding: 15px;
+            box-sizing: border-box;
+            padding-bottom: 80px; /* Espaço para a barra de navegação do Android */
         }
 
         .header {
-            margin-bottom: 25px;
+            text-align: center;
+            margin-bottom: 15px;
             border-bottom: 2px solid var(--primary);
             padding-bottom: 10px;
         }
 
-        .btn-localizar {
+        .app-title { margin: 0; font-size: 1.4rem; font-weight: 700; color: white; }
+        .app-subtitle { color: var(--accent); font-size: 0.85rem; opacity: 0.8; }
+
+        /* Botão Principal */
+        .btn-update {
             background-color: var(--primary);
             color: white;
             border: none;
-            padding: 18px;
+            padding: 16px;
             border-radius: 12px;
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: bold;
             cursor: pointer;
             width: 100%;
@@ -50,133 +62,211 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
-            transition: background 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: background 0.2s;
+            margin-bottom: 15px;
         }
+        .btn-update:active { transform: scale(0.98); background-color: #2e7d32; }
 
-        .btn-localizar:active {
-            transform: scale(0.98);
-            background-color: #1b5e20;
+        /* Container do Mapa - O "Pulo do Gato" Visual */
+        #map-container {
+            width: 100%;
+            height: 250px; /* Altura do mapa */
+            border-radius: 15px;
+            overflow: hidden; /* Corta o mapa redondo */
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+            margin-bottom: 15px;
+            border: 2px solid #1a331a;
+            display: none; /* Escondido até localizar */
         }
+        #map { width: 100%; height: 100%; }
 
-        #resultado {
-            margin-top: 25px;
+        /* Card de Informações - Estilo IDÊNTICO à sua foto */
+        #weather-card {
             background-color: var(--card-bg);
-            padding: 25px;
+            padding: 20px;
             border-radius: 15px;
             display: none;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+            border: 1px solid #1a331a;
         }
 
+        .cidade-nome { margin: 0; font-size: 1.6rem; font-weight: 700; color: white; }
+        .data-hora { font-size: 0.85rem; opacity: 0.6; margin-bottom: 15px; }
+        
         .temp-principal {
-            font-size: 4rem;
-            font-weight: bold;
+            font-size: 4.5rem;
+            font-weight: 800;
             color: var(--accent);
-            margin: 10px 0;
+            margin: 5px 0;
+            line-height: 1;
         }
 
+        .condicao-desc {
+            text-transform: capitalize;
+            font-size: 1.3rem;
+            font-weight: 500;
+            color: #b0bec5;
+            margin-bottom: 20px;
+        }
+
+        /* Grid de Detalhes - Estilo IDÊNTICO */
         .detalhes-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-top: 20px;
-            text-align: left;
+            gap: 12px;
         }
 
-        .dado {
-            background: rgba(0,0,0,0.2);
-            padding: 10px;
-            border-radius: 8px;
+        .dado-item {
+            background: rgba(0,0,0,0.25);
+            padding: 12px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .label { font-size: 0.8rem; opacity: 0.7; display: block; }
-        .valor { font-weight: bold; font-size: 1.1rem; }
+        .icon { font-size: 1.3rem; }
+        .info-block { display: flex; flex-direction: column; }
+        .label { font-size: 0.75rem; text-transform: uppercase; opacity: 0.7; letter-spacing: 1px; }
+        .valor { font-weight: 700; font-size: 1.1rem; color: white; }
     </style>
 </head>
 <body>
 
-<div class="container">
+<div class="app-container">
     <div class="header">
-        <h1 style="margin: 0; font-size: 1.5rem;">Agro na Palma da Mão</h1>
-        <small style="color: var(--primary)">Monitoramento Meteorológico Local</small>
+        <h1 class="app-title">Agro na Palma da Mão</h1>
+        <div class="app-subtitle">Monitoramento Meteorológico de Precisão</div>
     </div>
 
-    <button class="btn-localizar" onclick="buscarClima()">
-        <span>📍</span> BUSCAR CLIMA LOCAL
+    <button class="btn-update" id="btn-main" onclick="atualizarTudo()">
+        <span>📍</span> LOCALIZAR MINHA ÁREA
     </button>
 
-    <div id="resultado">
-        <h2 id="cidade" style="margin: 0;">--</h2>
-        <div id="data-hora" style="font-size: 0.9rem; opacity: 0.6; margin-bottom: 10px;"></div>
+    <div id="map-container">
+        <div id="map"></div>
+    </div>
+
+    <div id="weather-card">
+        <h2 class="cidade-nome" id="cidade">--</h2>
+        <div class="data-hora" id="data-hora"></div>
         
         <div class="temp-principal" id="temp">--°C</div>
-        <div id="condicao" style="text-transform: capitalize; font-size: 1.2rem; font-weight: 500;">--</div>
+        <div class="condicao-desc" id="condicao">--</div>
 
         <div class="detalhes-grid">
-            <div class="dado">
-                <span class="label">💧 UMIDADE</span>
-                <span class="valor" id="umidade">--</span>%
+            <div class="dado-item">
+                <span class="icon">💧</span>
+                <div class="info-block">
+                    <span class="label">UMIDADE</span>
+                    <span class="valor"><span id="umidade">--</span>%</span>
+                </div>
             </div>
-            <div class="dado">
-                <span class="label">💨 VENTO</span>
-                <span class="valor" id="vento">--</span> km/h
+            <div class="dado-item">
+                <span class="icon">💨</span>
+                <div class="info-block">
+                    <span class="label">VENTO</span>
+                    <span class="valor"><span id="vento">--</span> km/h</span>
+                </div>
             </div>
-            <div class="dado">
-                <span class="label">🌡️ SENSAÇÃO</span>
-                <span class="valor" id="sensacao">--</span>°C
+            <div class="dado-item">
+                <span class="icon">🌡️</span>
+                <div class="info-block">
+                    <span class="label">ΔT (DELTA T)</span>
+                    <span class="valor" id="delta-t" style="color: #ffeb3b;">--</span>
+                </div>
             </div>
-            <div class="dado">
-                <span class="label">☁️ NUVENS</span>
-                <span class="valor" id="nuvens">--</span>%
+            <div class="dado-item">
+                <span class="icon">📍</span>
+                <div class="info-block">
+                    <span class="label">PTO. ORVALHO</span>
+                    <span class="valor"><span id="orvalho">--</span>°C</span>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    const API_KEY = 'e1f33f6fd46fd77a1244d17dde90ab4a';
+    const API_KEY = 'e1f33f6fd46fd77a1244d17dde90ab4a'; // Sua chave mantida
+    let map, marker;
 
-    function buscarClima() {
-        if ("geolocation" in navigator) {
-            const btn = document.querySelector('.btn-localizar');
-            btn.innerText = "Consultando satélite...";
+    // Inicializa o mapa com uma visão genérica do Maranhão
+    function initMap() {
+        if (!map) {
+            map = L.map('map', { zoomControl: false }).setView([-5.11, -43.60], 7); // Foco no MA
             
+            // Tile Layer Dark Matter (estilo muito legal!)
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; CartoDB'
+            }).addTo(map);
+
+            // Adiciona controle de zoom no canto inferior direito
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
+        }
+    }
+
+    function atualizarTudo() {
+        if ("geolocation" in navigator) {
+            const btn = document.getElementById('btn-main');
+            btn.innerText = "Sincronizando Satélite...";
+            
+            initMap(); // Garante que o mapa esteja pronto
+
             navigator.geolocation.getCurrentPosition(position => {
                 const lat = position.coords.latitude;
                 const lon = position.coords.longitude;
                 
-                const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&lang=pt_br&appid=${API_KEY}`;
+                // 1. Atualiza o Mapa
+                document.getElementById('map-container').style.display = 'block';
+                map.setView([lat, lon], 14); // Zoom na área do talhão
 
-                fetch(url)
+                // Remove marcador antigo se houver
+                if (marker) map.removeLayer(marker);
+
+                // Adiciona o marcador "bem legal" (ponto de interesse)
+                const agroIcon = L.divIcon({
+                    className: 'custom-div-icon',
+                    html: "<div style='background-color:#4caf50;width:15px;height:15px;border-radius:50%;border:3px solid white;box-shadow:0 0 10px rgba(0,0,0,0.5);'></div>",
+                    iconSize: [15, 15],
+                    iconAnchor: [7, 7]
+                });
+                marker = L.marker([lat, lon], {icon: agroIcon}).addTo(map);
+                
+                // Força o Leaflet a recalcular o tamanho (evita bugs visuais)
+                setTimeout(() => { map.invalidateSize(); }, 100);
+
+                // 2. Busca o Clima (sua função original)
+                fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&lang=pt_br&appid=${API_KEY}`)
                     .then(res => res.json())
                     .then(data => {
-                        exibirDados(data);
-                        btn.innerHTML = "<span>📍</span> BUSCAR CLIMA LOCAL";
+                        exibirDadosTempo(data);
+                        btn.innerHTML = "<span>📍</span> ATUALIZAR LOCALIZAÇÃO";
                     })
                     .catch(() => {
                         alert("Erro ao conectar com o servidor de clima.");
-                        btn.innerHTML = "<span>📍</span> BUSCAR CLIMA LOCAL";
+                        btn.innerHTML = "<span>📍</span> LOCALIZAR MINHA ÁREA";
                     });
             }, (erro) => {
-                alert("Erro: Necessário ativar o GPS do celular.");
-                btn.innerHTML = "<span>📍</span> BUSCAR CLIMA LOCAL";
+                alert("Erro: Ative o GPS para localizar o talhão.");
+                btn.innerHTML = "<span>📍</span> LOCALIZAR MINHA ÁREA";
             });
         }
     }
 
-    function exibirDados(data) {
-        document.getElementById('resultado').style.display = 'block';
+    function exibirDadosTempo(data) {
+        document.getElementById('weather-card').style.display = 'block';
         document.getElementById('cidade').innerText = data.name;
         document.getElementById('temp').innerText = Math.round(data.main.temp) + '°C';
         document.getElementById('condicao').innerText = data.weather[0].description;
         document.getElementById('umidade').innerText = data.main.humidity;
         document.getElementById('vento').innerText = Math.round(data.wind.speed * 3.6);
-        document.getElementById('sensacao').innerText = Math.round(data.main.feels_like);
-        document.getElementById('nuvens').innerText = data.clouds.all;
-        
-        const agora = new Date();
-        document.getElementById('data-hora').innerText = agora.toLocaleDateString() + ' às ' + agora.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-    }
-</script>
 
-</body>
-</html>
+        // Cálculos Agronômicos (Ponto de Orvalho e Delta T)
+        const temp = data.main.temp;
+        const rh = data.main.humidity;
+        const dewPoint = (temp - (100 - rh) / 5).toFixed(1);
+        document.getElementById('orvalho').innerText = dewPoint;
+
+        const deltaT = (temp - dewPoint).toFixed
